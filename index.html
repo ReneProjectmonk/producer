@@ -1,78 +1,74 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Begroting Commercial Calculator</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2rem; max-width: 800px; margin: auto; }
+    h1 { font-size: 1.8rem; margin-bottom: 1rem; }
+    .crew-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    input { padding: 0.5rem; width: 100%; }
+    button { padding: 0.5rem 1rem; margin-top: 1rem; }
+    .total { text-align: right; margin-top: 2rem; font-weight: bold; font-size: 1.2rem; }
+  </style>
+</head>
+<body>
+  <h1>🎬 Begroting Commercial Calculator</h1>
+  <div id="crew-container"></div>
+  <button onclick="addCrewRow()">+ Voeg crewlid toe</button>
+  <div class="total" id="total-cost">Totaal (excl. btw): € 0.00</div>
 
-export default function BegrotingCalculator() {
-  const [crew, setCrew] = useState([
-    { rol: "Regisseur", dagtarief: 0, dagen: 1, overuren: 0 },
-  ]);
+  <script>
+    const standaardUren = 10;
 
-  const standaardUren = 10;
+    function opslagOveruren(uren) {
+      if (uren <= 2) return 1.25;
+      if (uren <= 5) return 1.5;
+      return 2.0;
+    }
 
-  const opslagOveruren = (uren) => {
-    if (uren <= 2) return 1.25;
-    if (uren <= 5) return 1.5;
-    return 2.0;
-  };
+    function addCrewRow() {
+      const container = document.getElementById('crew-container');
 
-  const addCrew = () => {
-    setCrew([...crew, { rol: "", dagtarief: 0, dagen: 1, overuren: 0 }]);
-  };
+      const row = document.createElement('div');
+      row.className = 'crew-row';
+      row.innerHTML = `
+        <input type="text" placeholder="Rol" />
+        <input type="number" placeholder="Dagtarief (€)" />
+        <input type="number" placeholder="Aantal dagen" value="1" />
+        <input type="number" placeholder="Overuren" value="0" />
+      `;
 
-  const updateCrew = (index, field, value) => {
-    const updated = [...crew];
-    updated[index][field] = field === "rol" ? value : parseFloat(value);
-    setCrew(updated);
-  };
+      container.appendChild(row);
+      row.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', updateTotal);
+      });
 
-  const berekenTotaal = () => {
-    return crew.reduce((totaal, persoon) => {
-      const normaleKosten = persoon.dagtarief * persoon.dagen;
-      const overurenKosten = persoon.overuren * (persoon.dagtarief / standaardUren) * (opslagOveruren(persoon.overuren));
-      return totaal + normaleKosten + overurenKosten;
-    }, 0);
-  };
+      updateTotal();
+    }
 
-  return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">🎬 Begroting Commercial Calculator</h1>
-      <div className="space-y-4">
-        {crew.map((persoon, index) => (
-          <Card key={index}>
-            <CardContent className="grid grid-cols-4 gap-4 p-4 items-center">
-              <Input
-                placeholder="Rol"
-                value={persoon.rol}
-                onChange={(e) => updateCrew(index, "rol", e.target.value)}
-              />
-              <Input
-                type="number"
-                placeholder="Dagtarief (€)"
-                value={persoon.dagtarief}
-                onChange={(e) => updateCrew(index, "dagtarief", e.target.value)}
-              />
-              <Input
-                type="number"
-                placeholder="Aantal dagen"
-                value={persoon.dagen}
-                onChange={(e) => updateCrew(index, "dagen", e.target.value)}
-              />
-              <Input
-                type="number"
-                placeholder="Overuren"
-                value={persoon.overuren}
-                onChange={(e) => updateCrew(index, "overuren", e.target.value)}
-              />
-            </CardContent>
-          </Card>
-        ))}
-        <Button onClick={addCrew}>+ Voeg crewlid toe</Button>
-      </div>
+    function updateTotal() {
+      const rows = document.querySelectorAll('.crew-row');
+      let totaal = 0;
 
-      <div className="text-right text-xl font-semibold">
-        Totaal (excl. btw): € {berekenTotaal().toFixed(2)}
-      </div>
-    </div>
-  );
-}
+      rows.forEach(row => {
+        const [rol, dagtarief, dagen, overuren] = row.querySelectorAll('input');
+        const tarief = parseFloat(dagtarief.value) || 0;
+        const numDagen = parseInt(dagen.value) || 0;
+        const numOveruren = parseInt(overuren.value) || 0;
+
+        const normaleKosten = tarief * numDagen;
+        const overurenKosten = numOveruren * (tarief / standaardUren) * opslagOveruren(numOveruren);
+
+        totaal += normaleKosten + overurenKosten;
+      });
+
+      document.getElementById('total-cost').textContent = `Totaal (excl. btw): € ${totaal.toFixed(2)}`;
+    }
+
+    // Voeg standaard één crewlid toe bij het laden
+    window.onload = addCrewRow;
+  </script>
+</body>
+</html>
