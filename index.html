@@ -1,0 +1,78 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+
+export default function BegrotingCalculator() {
+  const [crew, setCrew] = useState([
+    { rol: "Regisseur", dagtarief: 0, dagen: 1, overuren: 0 },
+  ]);
+
+  const standaardUren = 10;
+
+  const opslagOveruren = (uren) => {
+    if (uren <= 2) return 1.25;
+    if (uren <= 5) return 1.5;
+    return 2.0;
+  };
+
+  const addCrew = () => {
+    setCrew([...crew, { rol: "", dagtarief: 0, dagen: 1, overuren: 0 }]);
+  };
+
+  const updateCrew = (index, field, value) => {
+    const updated = [...crew];
+    updated[index][field] = field === "rol" ? value : parseFloat(value);
+    setCrew(updated);
+  };
+
+  const berekenTotaal = () => {
+    return crew.reduce((totaal, persoon) => {
+      const normaleKosten = persoon.dagtarief * persoon.dagen;
+      const overurenKosten = persoon.overuren * (persoon.dagtarief / standaardUren) * (opslagOveruren(persoon.overuren));
+      return totaal + normaleKosten + overurenKosten;
+    }, 0);
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <h1 className="text-2xl font-bold">🎬 Begroting Commercial Calculator</h1>
+      <div className="space-y-4">
+        {crew.map((persoon, index) => (
+          <Card key={index}>
+            <CardContent className="grid grid-cols-4 gap-4 p-4 items-center">
+              <Input
+                placeholder="Rol"
+                value={persoon.rol}
+                onChange={(e) => updateCrew(index, "rol", e.target.value)}
+              />
+              <Input
+                type="number"
+                placeholder="Dagtarief (€)"
+                value={persoon.dagtarief}
+                onChange={(e) => updateCrew(index, "dagtarief", e.target.value)}
+              />
+              <Input
+                type="number"
+                placeholder="Aantal dagen"
+                value={persoon.dagen}
+                onChange={(e) => updateCrew(index, "dagen", e.target.value)}
+              />
+              <Input
+                type="number"
+                placeholder="Overuren"
+                value={persoon.overuren}
+                onChange={(e) => updateCrew(index, "overuren", e.target.value)}
+              />
+            </CardContent>
+          </Card>
+        ))}
+        <Button onClick={addCrew}>+ Voeg crewlid toe</Button>
+      </div>
+
+      <div className="text-right text-xl font-semibold">
+        Totaal (excl. btw): € {berekenTotaal().toFixed(2)}
+      </div>
+    </div>
+  );
+}
