@@ -5,9 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Begroting Commercial Calculator</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 2rem; max-width: 800px; margin: auto; }
+    body { font-family: Arial, sans-serif; padding: 2rem; max-width: 1000px; margin: auto; }
     h1 { font-size: 1.8rem; margin-bottom: 1rem; }
-    .crew-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    h2 { margin-top: 2rem; font-size: 1.4rem; }
+    .section { margin-bottom: 2rem; }
+    .row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .row-wide { display: grid; grid-template-columns: 3fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
     input { padding: 0.5rem; width: 100%; }
     button { padding: 0.5rem 1rem; margin-top: 1rem; }
     .total { text-align: right; margin-top: 2rem; font-weight: bold; font-size: 1.2rem; }
@@ -15,8 +18,34 @@
 </head>
 <body>
   <h1>🎬 Begroting Commercial Calculator</h1>
-  <div id="crew-container"></div>
-  <button onclick="addCrewRow()">+ Voeg crewlid toe</button>
+
+  <div class="section">
+    <h2>Crew</h2>
+    <div id="crew-container"></div>
+    <button onclick="addRow('crew')">+ Voeg crewlid toe</button>
+  </div>
+
+  <div class="section">
+    <h2>Apparatuur & Huurkosten</h2>
+    <div id="gear-container"></div>
+    <button onclick="addRow('gear')">+ Voeg item toe</button>
+  </div>
+
+  <div class="section">
+    <h2>Post-productie</h2>
+    <div id="post-container"></div>
+    <button onclick="addRow('post')">+ Voeg post toe</button>
+  </div>
+
+  <div class="section">
+    <h2>Opslagen & Extra’s</h2>
+    <div class="row-wide">
+      <input type="text" placeholder="Omschrijving (bijv. Productie fee)" id="opslag-label" />
+      <input type="number" placeholder="%" id="opslag-percentage" />
+      <input type="text" disabled value="Wordt berekend" />
+    </div>
+  </div>
+
   <div class="total" id="total-cost">Totaal (excl. btw): € 0.00</div>
 
   <script>
@@ -28,47 +57,70 @@
       return 2.0;
     }
 
-    function addCrewRow() {
-      const container = document.getElementById('crew-container');
-
+    function addRow(type) {
+      const container = document.getElementById(`${type}-container`);
       const row = document.createElement('div');
-      row.className = 'crew-row';
-      row.innerHTML = `
-        <input type="text" placeholder="Rol" />
-        <input type="number" placeholder="Dagtarief (€)" />
-        <input type="number" placeholder="Aantal dagen" value="1" />
-        <input type="number" placeholder="Overuren" value="0" />
-      `;
+      row.className = (type === 'crew') ? 'row' : 'row-wide';
+
+      if (type === 'crew') {
+        row.innerHTML = `
+          <input type="text" placeholder="Rol" />
+          <input type="number" placeholder="Dagtarief (€)" />
+          <input type="number" placeholder="Aantal dagen" value="1" />
+          <input type="number" placeholder="Overuren" value="0" />
+        `;
+      } else {
+        row.innerHTML = `
+          <input type="text" placeholder="Omschrijving" />
+          <input type="number" placeholder="Kosten (€) per dag" />
+          <input type="number" placeholder="Aantal dagen" value="1" />
+        `;
+      }
 
       container.appendChild(row);
       row.querySelectorAll('input').forEach(input => {
         input.addEventListener('input', updateTotal);
       });
-
       updateTotal();
     }
 
     function updateTotal() {
-      const rows = document.querySelectorAll('.crew-row');
       let totaal = 0;
 
-      rows.forEach(row => {
-        const [rol, dagtarief, dagen, overuren] = row.querySelectorAll('input');
+      document.querySelectorAll('#crew-container .row').forEach(row => {
+        const [_, dagtarief, dagen, overuren] = row.querySelectorAll('input');
         const tarief = parseFloat(dagtarief.value) || 0;
         const numDagen = parseInt(dagen.value) || 0;
         const numOveruren = parseInt(overuren.value) || 0;
-
         const normaleKosten = tarief * numDagen;
         const overurenKosten = numOveruren * (tarief / standaardUren) * opslagOveruren(numOveruren);
-
         totaal += normaleKosten + overurenKosten;
       });
 
+      ['gear', 'post'].forEach(type => {
+        document.querySelectorAll(`#${type}-container .row-wide`).forEach(row => {
+          const [_, tarief, dagen] = row.querySelectorAll('input');
+          const prijs = parseFloat(tarief.value) || 0;
+          const aantal = parseInt(dagen.value) || 0;
+          totaal += prijs * aantal;
+        });
+      });
+
+      const opslagInput = document.getElementById('opslag-percentage');
+      const opslag = parseFloat(opslagInput.value) || 0;
+      const opslagBedrag = totaal * (opslag / 100);
+      const opslagField = document.querySelector('#opslag-percentage').parentElement.querySelector('input[disabled]');
+      opslagField.value = `€ ${opslagBedrag.toFixed(2)}`;
+
+      totaal += opslagBedrag;
       document.getElementById('total-cost').textContent = `Totaal (excl. btw): € ${totaal.toFixed(2)}`;
     }
 
-    // Voeg standaard één crewlid toe bij het laden
-    window.onload = addCrewRow;
+    window.onload = () => {
+      addRow('crew');
+      addRow('gear');
+      addRow('post');
+    }
   </script>
 </body>
 </html>
